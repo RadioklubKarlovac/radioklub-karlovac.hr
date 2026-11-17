@@ -46,11 +46,13 @@ function formatDate(iso) {
 }
 
 function plainText(html) {
-  return decodeEntities(
-    html.replace(/<script[\s\S]*?<\/script>/gi, ' ')
-        .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-        .replace(/<[^>]+>/g, ' ')
-  ).replace(/\s+/g, ' ').trim();
+  const spaced = html
+    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<\/(p|div|li|h[1-6]|figcaption|blockquote|tr)>/gi, ' ')
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, '');
+  return decodeEntities(spaced).replace(/\s+/g, ' ').trim();
 }
 
 function makeExcerpt(html, max = 180) {
@@ -207,10 +209,14 @@ async function ensureThumb(srcRel, slug) {
   const base = path.basename(srcRel, path.extname(srcRel));
   const outRel = `user/data/media/cache/gallery/${slug}/${base}.jpg`;
   const outAbs = path.join(ROOT, outRel);
-  try {
-    const [srcStat, outStat] = await Promise.all([stat(srcAbs), stat(outAbs)]);
-    if (outStat.mtimeMs >= srcStat.mtimeMs) return outRel;
-  } catch { /* regenerate */ }
+  // In CI always regenerate: a fresh checkout gives every file the same mtime,
+  // so a replaced photo would otherwise keep its old thumbnail.
+  if (!process.env.CI) {
+    try {
+      const [srcStat, outStat] = await Promise.all([stat(srcAbs), stat(outAbs)]);
+      if (outStat.mtimeMs >= srcStat.mtimeMs) return outRel;
+    } catch { /* regenerate */ }
+  }
   await mkdir(path.dirname(outAbs), { recursive: true });
   await sharp(srcAbs).rotate()
     .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
