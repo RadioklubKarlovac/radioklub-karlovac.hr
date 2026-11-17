@@ -1,0 +1,11 @@
+{
+  "name": "radioklub-karlovac",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "marked": "^16.0.0"
+  }
+}
