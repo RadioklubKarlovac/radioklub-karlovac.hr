@@ -1,0 +1,35 @@
+---
+title: "Crocube Predavanje"
+date: 2025-03-04
+cover: "user/data/media/wp-content/uploads/2025/03/P1720960.jpg"
+---
+
+![P1720960](user/data/media/wp-content/uploads/2025/03/P1720960.jpg)
+![P1720959](user/data/media/wp-content/uploads/2025/03/P1720959.jpg)
+![P1720953](user/data/media/wp-content/uploads/2025/03/P1720953.jpg)
+![P1720948](user/data/media/wp-content/uploads/2025/03/P1720948.jpg)
+![P1720944](user/data/media/wp-content/uploads/2025/03/P1720944.jpg)
+![P1720937](user/data/media/wp-content/uploads/2025/03/P1720937.jpg)
+![P1720936](user/data/media/wp-content/uploads/2025/03/P1720936.jpg)
+![P1720935](user/data/media/wp-content/uploads/2025/03/P1720935.jpg)
+![P1720889res](user/data/media/wp-content/uploads/2025/03/P1720889res.jpg)
+![P1720884](user/data/media/wp-content/uploads/2025/03/P1720884.jpg)
+![P1720880](user/data/media/wp-content/uploads/2025/03/P1720880.jpg)
+![P1720879](user/data/media/wp-content/uploads/2025/03/P1720879.jpg)
+![P1720873](user/data/media/wp-content/uploads/2025/03/P1720873.jpg)
+![P1720871](user/data/media/wp-content/uploads/2025/03/P1720871.jpg)
+![P1720867](user/data/media/wp-content/uploads/2025/03/P1720867.jpg)
+![P1720864](user/data/media/wp-content/uploads/2025/03/P1720864.jpg)
+![P1720860](user/data/media/wp-content/uploads/2025/03/P1720860.jpg)
+![P1720858](user/data/media/wp-content/uploads/2025/03/P1720858.jpg)
+![P1720855](user/data/media/wp-content/uploads/2025/03/P1720855.jpg)
+![P1720851](user/data/media/wp-content/uploads/2025/03/P1720851.jpg)
+![P1720845](user/data/media/wp-content/uploads/2025/03/P1720845.jpg)
+![P1720846](user/data/media/wp-content/uploads/2025/03/P1720846.jpg)
+![P1720840](user/data/media/wp-content/uploads/2025/03/P1720840.jpg)
+![P1720839](user/data/media/wp-content/uploads/2025/03/P1720839.jpg)
+![P1720838](user/data/media/wp-content/uploads/2025/03/P1720838.jpg)
+![P1720824](user/data/media/wp-content/uploads/2025/03/P1720824.jpg)
+![P1720822](user/data/media/wp-content/uploads/2025/03/P1720822.jpg)
+![P1720819](user/data/media/wp-content/uploads/2025/03/P1720819.jpg)
+![P1720816](user/data/media/wp-content/uploads/2025/03/P1720816.jpg)

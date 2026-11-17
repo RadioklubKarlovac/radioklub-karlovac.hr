@@ -37,6 +37,29 @@ turned into pages by a small build script, automatically deployed by GitHub Acti
 Isto možeš napraviti i direktno na GitHubu: **Add file → Create new file**, zalijepi
 sadržaj, **Commit changes**. Slike se dodaju kroz **Add file → Upload files**.
 
+## Dodavanje novog albuma u galeriju
+
+1. Uploadaj fotografije u `user/data/media/uploads/GGGG/MM/`.
+2. Napravi `content/galerija/ime-albuma.md`:
+
+   ```markdown
+   ---
+   title: "Radna akcija na Sv. Križu"
+   date: 2026-11-20
+   cover: user/data/media/uploads/2026/11/prva.jpg
+   ---
+
+   ![Kratki opis slike](user/data/media/uploads/2026/11/prva.jpg)
+   ![Druga slika](user/data/media/uploads/2026/11/druga.jpg)
+   ```
+
+   - `title` i `date` su obavezni; `date` određuje redoslijed u galeriji.
+   - `cover` je naslovna slika kartice (ako izostaviš, koristi se prva slika).
+   - Svaka slika je jedan redak `![opis](putanja)`. Opis se prikazuje u lightboxu.
+   - Build automatski izrađuje thumbnailove (800 px) u
+     `user/data/media/cache/gallery/<album>/`, pa se galerija brzo učitava.
+3. Commit/push — album se sam pojavi na `/galerija/` i dobije svoju stranicu.
+
 ## Lokalni pregled
 
 ```sh
@@ -48,9 +71,11 @@ python -m http.server 8000   # pa otvori http://localhost:8000
 ## Struktura
 
 - `content/novosti/*.md` — izvor objava (Markdown)
-- `build.mjs` — generator: članci, popis novosti, kartice na naslovnici
+- `content/galerija/*.md` — izvor galerija (Markdown, jedna datoteka = jedan album)
+- `build.mjs` — generator: članci, popis novosti, kartice na naslovnici, albumi i thumbovi
 - `novosti/<slug>/index.html`, `novosti/index.html`, `index.html` — generirani HTML
   (ne uređivati ručno; prepisat će se pri buildu)
+- `galerija/<slug>/index.html`, `galerija/index.html` — generirani HTML (isto)
 - `povijest-kluba/`, `prostorije-kluba/`, `galerija/`, `lorawan/`, `kontakt/` — statične
   stranice (uređuju se ručno)
 - `user/themes/radioklub/` — tema (CSS/JS, uključuje lightbox galerije)

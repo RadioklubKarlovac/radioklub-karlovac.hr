@@ -4,9 +4,10 @@
 //   - novosti/index.html         (news listing)
 //   - index.html                 (homepage, latest 6 cards)
 // Usage: node build.mjs
-import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, readdir, mkdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { marked } from 'marked';
+import sharp from 'sharp';
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content', 'novosti');
@@ -124,11 +125,12 @@ const card = (post, { assetPrefix, linkPrefix }) => `        <article class="pos
           </div>
         </article>`;
 
-// Replace the inner content of <div class="post-grid"> ... matching </div>
-function replacePostGrid(html, inner) {
-  const open = html.indexOf('<div class="post-grid">');
-  if (open === -1) throw new Error('post-grid not found');
-  const start = open + '<div class="post-grid">'.length;
+// Replace the inner content of <div class="CLASS"> ... matching </div>
+function replaceDiv(html, className, inner) {
+  const openTag = `<div class="${className}">`;
+  const open = html.indexOf(openTag);
+  if (open === -1) throw new Error(`${className} not found`);
+  const start = open + openTag.length;
   const re = /<div\b|<\/div>/g;
   re.lastIndex = start;
   let depth = 1;
@@ -139,7 +141,7 @@ function replacePostGrid(html, inner) {
       return html.slice(0, start) + '\n' + inner + '\n  ' + html.slice(m.index);
     }
   }
-  throw new Error('unclosed post-grid');
+  throw new Error(`unclosed ${className}`);
 }
 
 // ---------- load posts ----------
@@ -182,7 +184,7 @@ const listHtml = await readFile(listPath, 'utf8');
 const listCards = posts
   .map(p => card(p, { assetPrefix: '../', linkPrefix: './' }))
   .join('\n');
-await writeFile(listPath, replacePostGrid(listHtml, listCards), 'utf8');
+await writeFile(listPath, replaceDiv(listHtml, 'post-grid', listCards), 'utf8');
 
 // ---------- update homepage ----------
 const homePath = path.join(ROOT, 'index.html');
@@ -191,7 +193,137 @@ const homeCards = posts
   .slice(0, HOMEPAGE_CARDS)
   .map(p => card(p, { assetPrefix: './', linkPrefix: './novosti/' }))
   .join('\n');
-await writeFile(homePath, replacePostGrid(homeHtml, homeCards), 'utf8');
+await writeFile(homePath, replaceDiv(homeHtml, 'post-grid', homeCards), 'utf8');
 
 console.log(`Built ${posts.length} posts (homepage shows ${Math.min(posts.length, HOMEPAGE_CARDS)})`);
 for (const p of posts) console.log(`  ${p.date}  ${p.slug}  — ${p.title}`);
+
+// ================= galleries =================
+const GALLERY_DIR = path.join(ROOT, 'content', 'galerija');
+const THUMB_WIDTH = 800;
+
+async function ensureThumb(srcRel, slug) {
+  const srcAbs = path.join(ROOT, srcRel);
+  const base = path.basename(srcRel, path.extname(srcRel));
+  const outRel = `user/data/media/cache/gallery/${slug}/${base}.jpg`;
+  const outAbs = path.join(ROOT, outRel);
+  try {
+    const [srcStat, outStat] = await Promise.all([stat(srcAbs), stat(outAbs)]);
+    if (outStat.mtimeMs >= srcStat.mtimeMs) return outRel;
+  } catch { /* regenerate */ }
+  await mkdir(path.dirname(outAbs), { recursive: true });
+  await sharp(srcAbs).rotate()
+    .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
+    .jpeg({ quality: 80, progressive: true })
+    .toFile(outAbs);
+  return outRel;
+}
+
+function galleryItems(body) {
+  const items = [];
+  const mdImg = /!\[([^\]]*)\]\(([^)\s]+)\)/g;
+  let m;
+  while ((m = mdImg.exec(body))) items.push({ caption: m[1].trim(), src: m[2].trim() });
+  if (!items.length) {
+    for (const line of body.split(/\r?\n/)) {
+      const t = line.trim();
+      if (/^(?:\.\.\/)*\/?user\/.+\.(jpe?g|png|webp)$/i.test(t)) items.push({ caption: '', src: t });
+    }
+  }
+  return items.map(i => ({
+    ...i,
+    src: i.src.replace(/^(?:\.\.\/)+/, '').replace(/^\//, ''),
+  }));
+}
+
+function pluralSlika(n) {
+  const d = n % 10, dd = n % 100;
+  if (d === 1 && dd !== 11) return `${n} slika`;
+  if (d >= 2 && d <= 4 && (dd < 12 || dd > 14)) return `${n} slike`;
+  return `${n} slika`;
+}
+
+const galleryFigure = (f) => `  <figure class="gallery-figure">
+    <a href="../../${f.src}" data-lightbox-item data-caption="${escapeHtml(f.caption)}"><img src="../../${f.thumb}" alt="${escapeHtml(f.caption)}" loading="lazy"></a>
+  </figure>`;
+
+const galleryPage = (a) => `<!doctype html>
+<html lang="hr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtml(a.title)} - Radioklub Karlovac</title>
+  <link rel="stylesheet" href="../../user/themes/radioklub/css/site.css">
+  <script src="../../user/themes/radioklub/js/site.js" defer></script>
+</head>
+<body>
+${header('../../')}
+  <main>
+      <section class="page-shell gallery-page">
+<p><a class="back-link" href="../">Natrag na galeriju</a></p>
+<h1>${escapeHtml(a.title)}</h1>
+${a.description ? `<p>${a.description}</p>\n` : ''}<div class="gallery-grid">
+${a.figures}
+</div>
+</section>
+  </main>
+${footer}
+</body>
+</html>
+`;
+
+const albumCard = (a) => `<a class="gallery-card" href="./${a.slug}/">
+  <img src="../${a.coverThumb}" alt="">
+  <span>${escapeHtml(a.title)}</span>
+  <small>${pluralSlika(a.count)}</small>
+</a>`;
+
+const galFiles = (await readdir(GALLERY_DIR)).filter(f => f.endsWith('.md'));
+const albums = [];
+
+for (const file of galFiles) {
+  const raw = await readFile(path.join(GALLERY_DIR, file), 'utf8');
+  const { data, body } = parseFrontmatter(raw);
+  const slug = (data.slug || file.replace(/\.md$/, '')).trim();
+  if (!data.title) throw new Error(`${file}: missing "title" in frontmatter`);
+  if (!data.date) throw new Error(`${file}: missing "date" in frontmatter`);
+
+  const items = galleryItems(body);
+  if (!items.length) throw new Error(`${file}: no images found in body`);
+
+  const figures = [];
+  for (const item of items) {
+    const thumb = await ensureThumb(item.src, slug);
+    figures.push(galleryFigure({ ...item, thumb }));
+  }
+
+  const coverRel = (data.cover || items[0].src)
+    .replace(/^(?:\.\.\/)+/, '').replace(/^\//, '');
+  const coverThumb = await ensureThumb(coverRel, slug);
+
+  albums.push({
+    slug,
+    title: decodeEntities(data.title),
+    date: String(data.date),
+    description: data.description || '',
+    count: items.length,
+    figures: figures.join('\n'),
+    coverThumb,
+  });
+}
+
+albums.sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+
+for (const album of albums) {
+  const dir = path.join(ROOT, 'galerija', album.slug);
+  await mkdir(dir, { recursive: true });
+  await writeFile(path.join(dir, 'index.html'), galleryPage(album), 'utf8');
+}
+
+const galIndexPath = path.join(ROOT, 'galerija', 'index.html');
+const galHtml = await readFile(galIndexPath, 'utf8');
+const galCards = albums.map(albumCard).join('\n');
+await writeFile(galIndexPath, replaceDiv(galHtml, 'gallery-album-grid', galCards), 'utf8');
+
+console.log(`\nBuilt ${albums.length} gallery albums`);
+for (const a of albums) console.log(`  ${a.date}  ${String(a.count).padStart(2)} img  ${a.slug}`);
